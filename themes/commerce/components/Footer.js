@@ -195,9 +195,9 @@ const Footer = props => {
             <div className='text-xs text-light-500 dark:text-gray-700'>
               Powered by{' '}
               <a
-                href='https://github.com/tangly1024/NotionNext'
+                href='https://github.com/zxsos'
                 className='dark:text-gray-300'>
-                NotionNext {siteConfig('VERSION')}
+                zxsos
               </a>
               .
             </div>

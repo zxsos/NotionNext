@@ -11,7 +11,7 @@ export default function PoweredBy(props) {
       <a
         href='https://github.com/zxsos'
         className='underline justify-start'>
-        ZXSOS
+        zxsos
       </a>
       .
     </div>
