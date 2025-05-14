@@ -39,7 +39,7 @@ export default function Footer(props) {
             <a
               href='https://github.com/zxsos'
               className=' hover:underline'>
-              zxsos
+              -zxsos
             </a>
           </span>
         </div>

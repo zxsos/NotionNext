@@ -46,7 +46,7 @@ const Footer = ({ title }) => {
           <a
             href='https://github.com/zxsos'
             className='underline text-gray-500 dark:text-gray-300'>
-            zxsos
+            -zxsos
           </a>
           .
         </span>

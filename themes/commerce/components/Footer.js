@@ -197,7 +197,7 @@ const Footer = props => {
               <a
                 href='https://github.com/zxsos'
                 className='dark:text-gray-300'>
-                zxsos
+                -zxsos
               </a>
               .
             </div>

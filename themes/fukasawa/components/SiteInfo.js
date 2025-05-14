@@ -43,7 +43,7 @@ function SiteInfo({ title }) {
           <a
             href='https://github.com/zxsos'
             className='underline'>
-            zxsos
+            -zxsos
           </a>
         </span>
         <br />
