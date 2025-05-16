@@ -34,14 +34,6 @@ export default function Footer(props) {
             </a>
           )}
           <BeiAnGongAn />
-          <span className='no-underline ml-4'>
-            Powered by
-            <a
-              href='https://github.com/zxsos'
-              className=' hover:underline'>
-              -zxsos
-            </a>
-          </span>
         </div>
       </div>
     </footer>

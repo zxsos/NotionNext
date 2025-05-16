@@ -191,16 +191,6 @@ const Footer = props => {
               <CopyRightDate />
             </div>
 
-            {/* 技术支持 */}
-            <div className='text-xs text-light-500 dark:text-gray-700'>
-              Powered by{' '}
-              <a
-                href='https://github.com/zxsos'
-                className='dark:text-gray-300'>
-                -zxsos
-              </a>
-              .
-            </div>
 
             {/* 站点统计 */}
             <div>

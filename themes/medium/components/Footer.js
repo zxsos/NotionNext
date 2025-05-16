@@ -41,15 +41,7 @@ const Footer = ({ title }) => {
         </span>
         <br />
         <h1>{title}</h1>
-        <span className='text-xs font-serif'>
-          Powered by
-          <a
-            href='https://github.com/zxsos'
-            className='underline text-gray-500 dark:text-gray-300'>
-            -zxsos
-          </a>
-          .
-        </span>
+
       </span>
     </footer>
   )
