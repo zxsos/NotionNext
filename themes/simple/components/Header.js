@@ -3,6 +3,7 @@ import { siteConfig } from '@/lib/config'
 import Link from 'next/link'
 import CONFIG from '../config'
 import SocialButton from './SocialButton'
+import DarkModeButton from '@/components/DarkModeButton'
 
 /**
  * 网站顶部
@@ -44,6 +45,9 @@ export default function Header(props) {
 
         <div className='flex justify-center'>
           <SocialButton />
+        </div>
+        <div>
+          <DarkModeButton/>
         </div>
         <div className='text-xs mt-4 text-gray-500 dark:text-gray-300'>
           {siteConfig('DESCRIPTION')}
