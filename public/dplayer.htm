@@ -24,83 +24,148 @@
 </head>
 
 <body>
-    <!-- 创建一个容器用于放置视频播放器 -->
-    <div id="dplayer-container"></div>
-    <!-- 引入 Hls.js 库 -->
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<!-- 创建一个容器用于放置视频播放器 -->
+<div id="dplayer-container"></div>
+<!-- 引入 Hls.js 库 -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
-    <!-- 引入 DPlayer JavaScript 文件 -->
-    <script src="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js"></script>
+<!-- 引入 DPlayer JavaScript 文件 -->
+<script src="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js"></script>
 
-    <script>
-        var myParam = decodeURIComponent(location.search.split('n=')[1]);
-        if (!myParam) {
-            alert('无效的视频地址')
-        }
-        // 创建 DPlayer 实例
-        var dp = new DPlayer({
-            // 定义容器
-            container: document.getElementById('dplayer-container'),
-            // 视频源地址
-            video: {
-                url: myParam,
-                type: 'auto',
-                customType: {
-                    m3u8: function(video, player) {
-                        if (Hls.isSupported()) {
-                            var hls = new Hls({
-                                xhrSetup: function(xhr) {
-                                    xhr.withCredentials = false;
-                                    // 添加自定义请求头
-                                    xhr.setRequestHeader('Accept', '*/*');
-                                    xhr.setRequestHeader('Range', 'bytes=0-');
-                                },
-                                // 添加额外的HLS配置
-                                debug: false,
-                                enableWorker: true,
-                                lowLatencyMode: true,
-                                backBufferLength: 90
-                            });
-                            hls.loadSource(video.src);
-                            hls.attachMedia(video);
-                            hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                                video.play();
-                            });
-                            // 添加错误处理
-                            hls.on(Hls.Events.ERROR, function(event, data) {
-                                console.error('HLS错误:', data);
-                                if (data.fatal) {
-                                    switch(data.type) {
-                                        case Hls.ErrorTypes.NETWORK_ERROR:
-                                            hls.startLoad();
-                                            break;
-                                        case Hls.ErrorTypes.MEDIA_ERROR:
-                                            hls.recoverMediaError();
-                                            break;
-                                        default:
-                                            hls.destroy();
-                                            break;
-                                    }
+<script>
+    var myParam = decodeURIComponent(location.search.split('n=')[1]);
+    if (!myParam) {
+        alert('无效的视频地址');
+        // 可以考虑阻止后续代码执行
+        throw new Error('无效的视频地址');
+    }
+    // 创建 DPlayer 实例
+    var dp = new DPlayer({
+        // 定义容器
+        container: document.getElementById('dplayer-container'),
+        // 视频源地址
+        video: {
+            url: myParam, // 原始 M3U8 地址
+            type: 'auto', // DPlayer 会根据 customType 自动选择
+            customType: {
+                'm3u8': function(video, player) { // 注意这里键名是 'm3u8' 小写
+                    if (Hls.isSupported()) {
+                        var hls = new Hls({
+                            debug: true, // 启用调试模式
+                            xhrSetup: function(xhr) {
+                                xhr.withCredentials = false; // 禁用跨域凭证
+                            }
+                        });
+
+                        // 添加 HLS.js 错误处理
+                        hls.on(Hls.Events.ERROR, function(event, data) {
+                            console.error('HLS.js 错误:', data);
+                            if (data.fatal) {
+                                switch (data.type) {
+                                    case Hls.ErrorTypes.NETWORK_ERROR:
+                                        console.error('HLS.js 网络错误，尝试恢复...');
+                                        // 你可以根据具体情况决定是否以及如何恢复
+                                        // hls.startLoad(); // 可能会导致循环
+                                        break;
+                                    case Hls.ErrorTypes.MEDIA_ERROR:
+                                        console.error('HLS.js 媒体错误，尝试恢复...');
+                                        hls.recoverMediaError();
+                                        break;
+                                    default:
+                                        console.error('HLS.js 无法恢复的错误，销毁 HLS 实例');
+                                        hls.destroy();
+                                        break;
                                 }
+                            }
+                        });
+
+                        // 步骤 1: 获取原始 M3U8 文件内容
+                        fetch(video.src) // video.src 就是 myParam
+                          .then(response => {
+                              if (!response.ok) {
+                                  throw new Error('网络响应错误，无法获取M3U8文件: ' + response.status + ' ' + response.statusText);
+                              }
+                              return response.text();
+                          })
+                          .then(m3u8Text => {
+                              // 步骤 2: 修改 M3U8 内容，将 .jpeg 替换为 .ts
+                              // 这个正则表达式查找所有以 .jpeg 结尾的行（非注释行），并替换为 .ts
+                              // 它假设 .jpeg 只出现在段文件名末尾
+                              const modifiedM3U8Text = m3u8Text.replace(/^([^#\s].*)\.jpeg(\s*?$)/gm, '$1.ts$2');
+
+                              // (可选) 打印修改前后的 M3U8 内容进行调试
+                              // console.log("原始 M3U8:\n", m3u8Text);
+                              // console.log("修改后 M3U8:\n", modifiedM3U8Text);
+
+                              // 步骤 3: 创建一个 Blob 对象和 Object URL
+                              const m3u8Blob = new Blob([modifiedM3U8Text], { type: 'application/vnd.apple.mpegurl' });
+                              const objectURL = URL.createObjectURL(m3u8Blob);
+
+                              // 步骤 4: 将修改后的 M3U8 (以 Object URL 形式) 加载到 HLS.js
+                              hls.loadSource(objectURL);
+                              hls.attachMedia(video);
+                              hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                                  video.play().catch(playError => {
+                                      console.warn("自动播放被阻止或失败:", playError);
+                                      player.notice("视频已加载，请点击播放", 3000);
+                                  });
+                                  // 当不再需要 objectURL 时（例如播放器销毁或加载新源时），应该释放它
+                                  // hls.on(Hls.Events.DESTROYING, function() { URL.revokeObjectURL(objectURL); });
+                              });
+                          })
+                          .catch(error => {
+                              console.error('加载或修改M3U8文件失败:', error);
+                              player.notice('加载M3U8配置失败: ' + error.message, 5000);
+                              // 尝试回退到原生 HLS 播放原始 M3U8 (如果浏览器支持)
+                              if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                                  console.warn('尝试使用原生HLS播放原始M3U8');
+                                  video.src = myParam; // 使用原始 M3U8 地址
+                                  video.addEventListener('loadedmetadata', function() {
+                                      video.play().catch(playError => {
+                                          console.warn("原生HLS自动播放被阻止或失败:", playError);
+                                          player.notice("视频已加载，请点击播放", 3000);
+                                      });
+                                  });
+                                  video.addEventListener('error', function(e) {
+                                      player.notice('原生HLS播放失败', 3000);
+                                      console.error('原生HLS播放错误', e);
+                                  });
+                              } else {
+                                  player.notice('您的浏览器不支持 HLS 播放', 3000);
+                              }
+                          });
+
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        // 浏览器原生支持 HLS (通常是 Safari)
+                        video.src = myParam; // 使用原始 M3U8 地址
+                        video.addEventListener('loadedmetadata', function() {
+                            video.play().catch(playError => {
+                                console.warn("原生HLS自动播放被阻止或失败:", playError);
+                                player.notice("视频已加载，请点击播放", 3000);
                             });
-                        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                            video.src = video.src;
-                        } else {
-                            player.notice('您的浏览器不支持 HLS 播放');
-                        }
+                        });
+                    } else {
+                        player.notice('您的浏览器不支持 HLS 播放', 3000);
                     }
                 }
-            },
-            autoplay: false, // 设置为手动点击播放
-            // 视频封面图片
-            poster: 'https://example.com/your-video-poster.jpg',
-            // 添加错误处理
-            error: function(e) {
-                console.error('播放器错误:', e);
-                player.notice('视频加载失败，请检查视频地址是否正确');
             }
-        });
-    </script>
+        },
+        autoplay: false, // 设置为手动点击播放
+        // 视频封面图片 (请替换为实际的 URL)
+        poster: '', // 'https://example.com/your-video-poster.jpg',
+        // DPlayer 播放器级别的错误处理
+        error: function(e) { // 注意：DPlayer 的 error 事件回调参数通常是 player 实例本身，具体错误信息在 player.event 相关属性或 console
+            console.error('DPlayer 播放器错误:', e); // e 可能不是具体的错误对象，需要查看 DPlayer 文档
+            // player.notice('视频加载失败，请检查视频地址或网络连接', 5000);
+        }
+    });
+
+    // 监听DPlayer的 notice show 事件，方便调试
+    dp.on('notice_show', function(data) {
+        console.log('DPlayer Notice:', data.text);
+    });
+
+</script>
 </body>
 
 </html>
