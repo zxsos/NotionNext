@@ -50,13 +50,38 @@
                         if (Hls.isSupported()) {
                             var hls = new Hls({
                                 xhrSetup: function(xhr) {
-                                    xhr.withCredentials = false; // 禁用跨域凭证
-                                }
+                                    xhr.withCredentials = false;
+                                    // 添加自定义请求头
+                                    xhr.setRequestHeader('Accept', '*/*');
+                                    xhr.setRequestHeader('Range', 'bytes=0-');
+                                },
+                                // 添加额外的HLS配置
+                                debug: false,
+                                enableWorker: true,
+                                lowLatencyMode: true,
+                                backBufferLength: 90
                             });
                             hls.loadSource(video.src);
                             hls.attachMedia(video);
                             hls.on(Hls.Events.MANIFEST_PARSED, function() {
                                 video.play();
+                            });
+                            // 添加错误处理
+                            hls.on(Hls.Events.ERROR, function(event, data) {
+                                console.error('HLS错误:', data);
+                                if (data.fatal) {
+                                    switch(data.type) {
+                                        case Hls.ErrorTypes.NETWORK_ERROR:
+                                            hls.startLoad();
+                                            break;
+                                        case Hls.ErrorTypes.MEDIA_ERROR:
+                                            hls.recoverMediaError();
+                                            break;
+                                        default:
+                                            hls.destroy();
+                                            break;
+                                    }
+                                }
                             });
                         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                             video.src = video.src;
